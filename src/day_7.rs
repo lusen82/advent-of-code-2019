@@ -34,6 +34,7 @@ pub fn day_7() {
                        // println!("Uniques {:?}", phases_copy);
                         if phases_copy.len() == phases.len() {
 
+                        println!("phasis {:?}", phases);
                             let mut current_following_input = 0;
                             let mut amplifier_iter = 0;
                             for phase in &phases {
@@ -43,12 +44,47 @@ pub fn day_7() {
                                 current_following_input = result.outputs[0];
                                 top_loop_res_memorys.push(result);
                                 amplifier_iter += 1;
-                               // println!("Current output : {}", &current_following_input);
+                                println!("Current output : {}", &current_following_input);
+                                let mut post_feedback_res = vec![];
+                                for n in 5..10 {
+                                    for o in 5..10 {
+                                        for p in 5..10 {
+                                            for q in 5..10 {
+                                                for r in 5..10 {
+                                                    let phases_2 = vec![n, o,p , q, r];
+                                                    let mut phases_copy_2 = phases_2.clone();
+                                                    phases_copy_2.sort();
+                                                    phases_copy_2.dedup();
+                                                    // println!("Uniques {:?}", phases_copy);
+                                                    if phases_copy_2.len() == phases_2.len() {
+
+                                                        let mut current_following_input_2 = current_following_input;
+                                                        let mut amplifier_iter = 0;
+                                                        for phase in &phases_2 {
+                                                            let mut memory_for_ampl: Memory = top_loop_res_memorys[amplifier_iter].clone();
+                                                            memory_for_ampl.inputs = vec![*phase, current_following_input];
+                                                            let result = run_int_code_machine(memory_for_ampl);
+                                                            current_following_input_2 = result.outputs[0];
+                                                            post_feedback_res.push(result);
+                                                            amplifier_iter += 1;
+                                                            //println!("Current output : {}", &current_following_input);
+                                                        }
+                                                        if current_following_input + current_following_input_2 > highest_thruster {
+                                                            highest_thruster = current_following_input + current_following_input_2;
+                                                            println!("For phase :{:?} is output: {}", &phases, &highest_thruster);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
                             }
-                            if current_following_input > highest_thruster {
-                                highest_thruster = current_following_input;
-                                println!("For phase :{:?} is output: {}", &phases, &highest_thruster);
-                            }
+//                            if current_following_input > highest_thruster_2 {
+//                                highest_thruster_2 = current_following_input;
+//                                println!("For phase :{:?} is output: {}", &phases, &highest_thruster_2);
+//                            }
                         }
                     }
                 }
@@ -56,44 +92,6 @@ pub fn day_7() {
         }
     }
 
-    let mut highest_thruster_2 = 0;
-    let mut post_feedback_res = vec![];
-    for i in 5..10 {
-        for j in 5..10 {
-            for k in 5..10 {
-                for l in 5..10 {
-                    for m in 5..10 {
-                        let phases = vec![i, j, k, l, m];
-                        let mut phases_copy = phases.clone();
-                        phases_copy.sort();
-                        phases_copy.dedup();
-                        // println!("Uniques {:?}", phases_copy);
-                        if phases_copy.len() == phases.len() {
-
-                            let mut current_following_input = 0;
-                            let mut amplifier_iter = 0;
-                            for phase in &phases {
-                                let mut memory_for_ampl: Memory = top_loop_res_memorys[amplifier_iter].clone();
-                                memory_for_ampl.inputs = vec![*phase, current_following_input];
-                                let result = run_int_code_machine(memory_for_ampl);
-                                current_following_input = result.outputs[0];
-                                post_feedback_res.push(result);
-                                amplifier_iter += 1;
-                                //println!("Current output : {}", &current_following_input);
-                            }
-                            if current_following_input > highest_thruster_2 {
-                                highest_thruster_2 = current_following_input;
-                                println!("For phase :{:?} is output: {}", &phases, &highest_thruster_2);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
-    println!("Final output : {}", &highest_thruster_2);
 }
 
 
@@ -101,8 +99,8 @@ pub fn day_7() {
 pub fn run_int_code_machine(mut memory: Memory) -> Memory {
     loop {
         let option = **&memory.result_vec.get(memory.pointer).unwrap();
-        //println!("Option is {}", &option);
-        //println!(" Pointer is {} ", memory.pointer);
+        println!("Option is {}", &option);
+        println!(" Pointer is {} ", memory.pointer);
         match option {
             1 => memory = Instr_01::new("Instruction 1").execute(memory, ParamMode::POSITION, ParamMode::POSITION),
             2 => memory = Instr_02::new("Instruction 2").execute(memory, ParamMode::POSITION, ParamMode::POSITION),
@@ -119,7 +117,7 @@ pub fn run_int_code_machine(mut memory: Memory) -> Memory {
                 // "ABCDE of instruction where DE is the instruction op:
                 //println!("Option: {}", option);
                 let instruction_op = option % 100;
-                //println!("Instruction: {}", &instruction_op);
+                println!("Instruction: {}", &instruction_op);
 
                 let parameter_mode = option % 1000;
                 let paameter_mode = parameter_mode / 100;
@@ -155,6 +153,9 @@ pub fn run_int_code_machine(mut memory: Memory) -> Memory {
             }
         }
     }
+    println!("Memoriy {:?}", memory.result_vec);
+    println!("Memoriy in {:?}", memory.inputs);
+    println!("Memoriy ou {:?}", memory.outputs);
     return memory;
 }
 
