@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
+use itertools::Itertools;
 
 pub fn day_7() {
     let mut highest_thruster = 0;
@@ -76,81 +77,60 @@ pub fn day_7_b() {
     let result_vec: Vec<i32> = numbers.clone();
 
     let mut sum = 0;
+    (5..10).permutations(5).for_each(|phases| {
 
-    for i in 5..10 {
-        for j in 5..10 {
-            for k in 5..10 {
-                for l in 5..10 {
-                    for m in 5..10 {
+            // Found a permutation, run feedback loop based int computer:
+            // Start by initializing memory instance vector:
+            let mut memory: Memory = Memory { result_vec: result_vec.clone(),
+                pointer: 0, inputs: vec![],
+                input_pointer: 0, outputs: vec![], ready:false };
+            let mut memories = vec![memory.clone(), memory.clone(),memory.clone(),memory.clone(),memory.clone()];
+            println!("phase is {:?}", phases);
+            // Initialize the first input to 0:
+            let mut current_following_input = 0;
+            println!("Current inputs {}", current_following_input);
+            let mut amplifier = 0;
+            let mut input_starts = vec![vec![], vec![], vec![], vec![],vec![]];
+            let mut iter = 0;
+            // Initialize the input vectors to include the phase for each amplifier:
+            for phase in &phases {
+                input_starts[iter].push(*phase);
+                iter +=1;
+            }
+            println!("input starts {:?}", &input_starts);
+            loop {
 
-                        // For every permutation of 5-9:
-                        let phases = vec![i, j, k, l, m];
-                        let mut phases_copy = phases.clone();
-                        phases_copy.sort();
-                        phases_copy.dedup();
-                        if phases_copy.len() == phases.len() {
+                // iterate over amplifiers over and over again:
+                // Get this amplifier's memory:
+                memory = memories[amplifier].clone();
+                input_starts[amplifier].push(current_following_input);
+                memory.inputs =  input_starts[amplifier].clone();
+                println!("Current input : {:?}", & memory.inputs);
+                let result = run_int_code_machine(memory, amplifier);
+                println!("Outputs {:?}", &result.outputs);
+                current_following_input = result.outputs[0];
+                memories[amplifier] = result.clone();
 
-                            // Found a permutation, run feedback loop based int computer:
-                            // Start by initializing memory instance vector:
-                            let mut memory: Memory = Memory { result_vec: result_vec.clone(),
-                                pointer: 0, inputs: vec![],
-                                input_pointer: 0, outputs: vec![], ready:false };
-                            let mut memories = vec![memory.clone(), memory.clone(),memory.clone(),memory.clone(),memory.clone()];
-                            println!("phase is {:?}", phases);
-                            // Initialize the first input to 0:
-                            let mut current_following_input = 0;
-                            println!("Current inputs {}", current_following_input);
-                            let mut amplifier = 0;
-                            let mut input_starts = vec![vec![], vec![], vec![], vec![],vec![]];
-                            let mut iter = 0;
-                            // Initialize the input vectors to include the phase for each amplifier:
-                            for phase in &phases {
-                                input_starts[iter].push(phases[iter]);
-                                iter +=1;
-                            }
-                            println!("input starts {:?}", &input_starts);
-                            loop {
-
-                                // iterate over amplifiers over and over again:
-
-                               // println!("Amplifier {}", amplifier);
-                                // Get this amplifier's memory:
-                                memory = memories[amplifier].clone();
-                               // println!("Inputs {:?}", &memory.inputs);
-                              //  println!("Current inputs {}", current_following_input);
-                                input_starts[amplifier].push(current_following_input);
-                                memory.inputs =  input_starts[amplifier].clone();
-                                println!("Current input : {:?}", & memory.inputs);
-                                let result = run_int_code_machine(memory, amplifier);
-                                println!("Outputs {:?}", &result.outputs);
-                                current_following_input = result.outputs[0];
-                                memories[amplifier] = result.clone();
-                               // println!("Current output : {}", &current_following_input);
-
-                                if *&result.ready {
-                                    println!("For phase :{:?} is output: {}", &phases, &highest_thruster);
-                                    if current_following_input > highest_thruster {
-                                        highest_thruster = current_following_input;
-                                      //  println!("For phase :{:?} is output: {}", &phases, &highest_thruster);
-                                    }
-                                    current_following_input = 0;
-                                    break;
-                                }
-                                if amplifier == 4 {
-                                    amplifier = 0;
-                                }else {
-
-                                amplifier += 1;
-                                }
-                            }
-                        }
+                if *&result.ready {
+                    println!("For phase :{:?} is output: {}", &phases, &highest_thruster);
+                    if current_following_input > highest_thruster {
+                        highest_thruster = current_following_input;
                     }
+                    current_following_input = 0;
+                    break;
+                }
+                if amplifier == 4 {
+                    amplifier = 0;
+                }else {
+
+                amplifier += 1;
                 }
             }
-        }
-        println!("Result is output: {}",  &highest_thruster);
-        sum += highest_thruster;
-    }
+
+    });
+    println!("Result is output: {}",  &highest_thruster);
+    sum += highest_thruster;
+
 }
 
 
@@ -159,19 +139,13 @@ pub fn run_int_code_machine(mut memory: Memory, amplifier_index: usize) -> Memor
     memory.outputs = vec![];
     loop {
         let option = **&memory.result_vec.get(memory.pointer).unwrap();
-       // println!("Option is {}", &option);
-        //println!(" Pointer is {} ", memory.pointer);
-
-       // println!("Memoriy in {:?}", memory.result_vec);
         match option {
             1 => memory = Instr_01::new("Instruction 1").execute(memory, ParamMode::POSITION, ParamMode::POSITION),
             2 => memory = Instr_02::new("Instruction 2").execute(memory, ParamMode::POSITION, ParamMode::POSITION),
             3 => {
-               // println!("Option 3! {} {}", memory.inputs.len(), memory.input_pointer);
                 if memory.inputs.len() <= memory.input_pointer {
-                    break;
+                    break; // We continue with next amplifier before running this further to get more inputs.
                 }
-              //  println!("Here");
                 memory = Instr_03::new("Instruction 3").execute(memory, ParamMode::POSITION, ParamMode::POSITION)
             },
             4 => memory = Instr_04::new("Instruction 4").execute(memory, ParamMode::POSITION, ParamMode::POSITION),
@@ -187,17 +161,13 @@ pub fn run_int_code_machine(mut memory: Memory, amplifier_index: usize) -> Memor
                 break;
             },
             _ => {
-                // "ABCDE of instruction where DE is the instruction op:
-                //println!("Option: {}", option);
+
                 let instruction_op = option % 100;
-              //  println!("Instruction: {}", &instruction_op);
 
                 let parameter_mode = option % 1000;
                 let paameter_mode = parameter_mode / 100;
-                // println!("First parameter mde {}", paameter_mode);
 
                 let paameter_mode2 = option / 1000;
-                // println!("Second parameter mde {}", paameter_mode2);
 
                 let param_1_mode = match paameter_mode {
                     0 => ParamMode::POSITION,
@@ -216,7 +186,7 @@ pub fn run_int_code_machine(mut memory: Memory, amplifier_index: usize) -> Memor
                     2 => Instr_02::new("Instruction 2").execute(memory, param_1_mode, param_2_mode),
                     3 => {
                         if memory.inputs.len() <= memory.input_pointer {
-                            break;
+                            break;// We continue with next amplifier before running this further to get more inputs.
                         }
                         Instr_03::new("Instruction 3").execute(memory, param_1_mode, param_2_mode)
                     },
@@ -237,8 +207,6 @@ pub fn run_int_code_machine(mut memory: Memory, amplifier_index: usize) -> Memor
             }
         }
     }
-   // println!("Memoriy in {:?}", memory.result_vec);
-    //println!("Memoriy ou {:?}", memory.outputs);
     return memory;
 }
 
@@ -264,7 +232,7 @@ impl Instruction for Instr_01 {
     fn execute(&self, mut memory: Memory, param_1_mode: ParamMode, param_2_mode: ParamMode) -> Memory {
         //self.log();
         let pointer = memory.pointer;
-       // println!("Pointer: {} Param 1 Mode: {:?} Param2 mode {:?}", &pointer, &param_1_mode, &param_2_mode);
+        // println!("Pointer: {} Param 1 Mode: {:?} Param2 mode {:?}", &pointer, &param_1_mode, &param_2_mode);
         let first_value = self.get_value_for_mode((pointer + 1), param_1_mode, &memory);
         let second_value =  self.get_value_for_mode((pointer + 2), param_2_mode, &memory);
         let to_repl_index = self.get_value_for_mode_usize(pointer + 3, ParamMode::IMMEDIATE, &memory);
@@ -320,9 +288,9 @@ impl Instruction for Instr_03 {
     fn execute(&self, mut memory: Memory, param_1_mode: ParamMode, param_2_mode: ParamMode) -> Memory {
 
         let pointer = memory.pointer;
-       // println!("Pointer {}", pointer);
+        // println!("Pointer {}", pointer);
         let first_value = self.get_value_for_mode_usize((pointer + 1), ParamMode::IMMEDIATE, &memory);
-      //  println!("to reply index = {}", first_value);
+        //  println!("to reply index = {}", first_value);
 
         memory.result_vec[first_value] = memory.inputs[memory.input_pointer];
         memory.input_pointer += 1;
@@ -351,8 +319,8 @@ impl Instruction for Instr_04 {
     fn execute(&self, mut memory: Memory, param_1_mode: ParamMode, param_2_mode: ParamMode) -> Memory {
         let pointer = memory.pointer;
         let first_value = self.get_value_for_mode_usize((pointer + 1), ParamMode::IMMEDIATE, &memory);
-       // println!("Result is: {}", first_value);
-     //   println!("Result from 4: {}", &memory.result_vec[first_value]);
+        // println!("Result is: {}", first_value);
+        //   println!("Result from 4: {}", &memory.result_vec[first_value]);
         memory.pointer = pointer + 2;
         memory.outputs.push(memory.result_vec[first_value]);
         memory
