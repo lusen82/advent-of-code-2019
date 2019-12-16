@@ -1,23 +1,23 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 
-pub fn day_8() -> Vec<Vec<Vec<char>>>{
+pub fn day_8(row_count: usize, col_count: usize) -> Vec<Vec<Vec<char>>>{
     let mut file = File::open("inp8.txt").unwrap();
     let mut reader = BufReader::new(file);
     let mut buf = String::new();
     reader.read_line(&mut buf);
     println!("buf ; {:?}", &buf);
-    let rows = &buf.len() / (25 * 6);
+    let rows = &buf.len() / (col_count * row_count);
     println!("rows {}", rows);
     let mut layers = vec![];
     let mut fewest_zeros = (1000,0);
-    for iter in 0..100{
+    for iter in 0..rows{
         let mut layer = vec![];
         let mut nr_of_zeros = 0 as usize;
-        for jiter in 0..6 {
+        for jiter in 0..row_count {
             //println!("Original buf: {:?}", &buf);
-            let vector_of_layers_rows: Vec<char> = buf.chars().take(25).collect();
-            buf = String::from(&buf[25..]);
+            let vector_of_layers_rows: Vec<char> = buf.chars().take(col_count).collect();
+            buf = String::from(&buf[col_count..]);
             //println!("Print this vec: {:?}", &vector_of_layers_rows);
             //println!("Left {:?}", &buf);
             let zero_chars: Vec<&char> = vector_of_layers_rows.iter().filter(|c| **c == '0').collect();
@@ -45,31 +45,47 @@ pub fn day_8() -> Vec<Vec<Vec<char>>>{
 }
 
 pub fn day_8_b() {
-    let layers = day_8();
-    let mut resulting_layer = vec![vec!['.'; 25]; 6];
-    for layer in 0..100 {
-        for row in 0..6 {
-            for c in 0..25 {
-                if resulting_layer[row][c] == '.' {
-                    if layers[layer][row][c] != '2' {
-                        resulting_layer[row][c] = match layers[layer][row][c] {
-                            '0' => '#',
-                            '1' => ' ',
+    let row_count = 6;
+    let col_count = 25;
+    let layers = day_8(row_count, col_count);
+    let mut resulting_layer = vec![vec!['.'; col_count]; row_count];
+    println!("layaers count = {}", layers.len());
+    for layer in 0..layers.len() {
+        let layer_ = 99-layer;
+        println!("layer: {}", layer_);
+        for row in 0..row_count{
+            for c in 0..col_count {
+                println!("row: {}", row);
+                println!("c: {}", c);
+                //if resulting_layer[row][c] == '.' {
+                    let layer_value = layers[layer_][row][c];
+                    println!("pop: {}", layer_value);
+                    if layer_value != '2' {
+                        resulting_layer[row][c] = match layer_value {
+                            '0' => ' ',
+                            '1' => '#',
                             _ => 'E',
                         };
 
                     }
-                }
+                //}
             }
         }
         for row in &resulting_layer {
             println!("{:?}", row);
         }
+        //for row in &resulting_layer {
+        //    println!("{:?}", row);
+        //}
     }
     for row in &resulting_layer {
         for r in row {
             print!("{}", r);
         }
         println!("-");
+    }
+
+    for row in &resulting_layer {
+        println!("{:?}", row);
     }
 }
